@@ -1,0 +1,56 @@
+/* app/globals.css */
+@import "tailwindcss";
+
+/* Define design tokens that Tailwind turns into classes like bg-background, border-border, etc. */
+@theme {
+  --color-background: 240 10% 3.9%;
+  --color-foreground: 0 0% 98%;
+  --color-card: 240 10% 3.9%;
+  --color-card-foreground: 0 0% 98%;
+  --color-popover: 240 5.9% 10%;
+  --color-popover-foreground: 0 0% 98%;
+  --color-primary: 240 5.2% 33.9%;
+  --color-primary-foreground: 0 0% 90%;
+  --color-secondary: 240 3.7% 15.9%;
+  --color-secondary-foreground: 24 5% 64%;
+  --color-muted: 240 3.7% 15.9%;
+  --color-muted-foreground: 240 5% 64.9%;
+  --color-accent: 240 3.7% 15.9%;
+  --color-accent-foreground: 0 0% 98%;
+  --color-destructive: 0 62.8% 30.6%;
+  --color-destructive-light: 0 62.8% 51%;
+  --color-destructive-foreground: 0 0% 98%;
+  --color-success: 153 61% 20%;
+  --color-success-light: 151 76% 36%;
+  --color-success-foreground: 153 1.22% 92%;
+  --color-border: 240 5.3% 26.1%;
+  --color-input: 240 3.7% 15.9%;
+  --color-ring: 240 5.3% 26.1%;
+  --radius: 1rem;
+}
+
+/* Base styles */
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Stream chat override you had */
+.str-chat-channel-list {
+  overflow: scroll;
+}
+
+/* Simple masonry utilities */
+@layer utilities {
+  .masonry {
+    column-gap: 1.5em;
+    column-count: 1;
+  }
+
+  .masonry-sm {
+    gap: 0.5rem;
+    column-count: 2;
+  }
+}
