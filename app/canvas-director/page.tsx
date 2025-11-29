@@ -311,9 +311,9 @@ export default function HomePage() {
     <main className="min-h-screen bg-background text-foreground font-sans p-6 flex gap-6">
       {/* LEFT SIDEBAR */}
       <section className="w-[340px] flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold">AI Canvas Director (MVP)</h1>
+        <h1 className="text-2xl font-semibold">Canvas Director (MVP)</h1>
         <p className="text-sm text-muted-foreground">
-          Upload a track, get AI analysis, three–six visual concepts, then
+          Upload a track, get expert analysis, three–six visual concepts, then
           generate a 5–8s canvas-ready video.
         </p>
 
@@ -666,6 +666,25 @@ export default function HomePage() {
         )}
       </div>
     )}
+    {/* Feedback Section */}
+
+{(wanVideoUrl || veoVideoUrl) && (
+  <div className="mt-8 border-t border-border pt-6">
+    <h3 className="text-sm font-medium mb-2">💬 Share feedback</h3>
+    <p className="text-xs text-muted-foreground mb-3">
+      Help us improve! Tell us how well the visuals matched your track.
+    </p>
+
+    <a
+      href="https://forms.gle/92SV2gPSCUkpZwzJ9"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center justify-center rounded-full bg-neutral-900 hover:bg-neutral-800 px-5 py-2 text-sm font-medium text-white transition"
+    >
+      Open feedback form →
+    </a>
+  </div>
+)}
   </div>
 
   {/* RIGHT: analysis */}
