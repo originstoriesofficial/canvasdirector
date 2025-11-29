@@ -5,7 +5,7 @@ import type { TrackRecipe, VisualStyleId, StyleMode } from "@/lib/types";
 
 type ImageIdea = { url: string; prompt: string; modelId: string };
 type ShotMode = "single" | "double";
-type CameraMotion = "zoom-in" | "zoom-out" | "circle-pan" | "swirl" | "static";
+type CameraMotion = "zoom-in" | "zoom-out" | "circle-pan" | "aerial" | "static";
 
 const VISUAL_STYLES: {
   id: VisualStyleId;
@@ -444,346 +444,324 @@ export default function HomePage() {
         <div className="text-xs text-muted-foreground">{status}</div>
       </section>
 
-      {/* MAIN CONTENT */}
-      <section className="flex-1 grid grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)] gap-6">
-        {/* MIDDLE: concepts + output video */}
-        <div className="flex flex-col gap-4">
-          <h2 className="text-sm font-medium">
-            Step 3 — Choose visual &amp; generate
-          </h2>
+ {/* MAIN CONTENT */}
+<section className="flex-1 grid grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)] gap-6">
+  {/* MIDDLE: concepts + output video */}
+  <div className="flex flex-col gap-4">
+    <h2 className="text-sm font-medium">
+      Step 3 — Choose visual &amp; generate
+    </h2>
 
-          {/* Concepts row */}
-          {imageIdeas.length > 0 ? (
-            <>
-              <div className="flex flex-wrap gap-3">
-                {imageIdeas.map((idea, idx) => {
-                  const isSelected = selectedImage?.url === idea.url;
-                  const isFirst = veoFirst?.url === idea.url;
-                  const isLast = veoLast?.url === idea.url;
+    {/* Concepts row */}
+    {imageIdeas.length > 0 ? (
+      <>
+        <div className="flex flex-wrap gap-3">
+          {imageIdeas.map((idea, idx) => {
+            const isSelected = selectedImage?.url === idea.url;
+            const isFirst = veoFirst?.url === idea.url;
+            const isLast = veoLast?.url === idea.url;
 
-                  return (
-                    <div
-                      key={idx}
+            return (
+              <div
+                key={idx}
+                className={[
+                  "relative rounded-2xl overflow-hidden border bg-background/40",
+                  isSelected ? "border-success-light" : "border-border",
+                ].join(" ")}
+              >
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedImage(idea)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      setSelectedImage(idea);
+                    }
+                  }}
+                  className="cursor-pointer outline-none"
+                >
+                  <img
+                    src={idea.url}
+                    alt={`Concept ${idx + 1}`}
+                    className="block w-[140px] h-[210px] object-cover"
+                  />
+                </div>
+
+                {shotMode === "double" && (
+                  <div className="absolute bottom-1 left-1 flex gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setVeoFirst(idea);
+                      }}
                       className={[
-                        "relative rounded-2xl overflow-hidden border bg-background/40",
-                        isSelected ? "border-success-light" : "border-border",
+                        "px-2 py-0.5 rounded-full border-0 text-[0.7rem]",
+                        isFirst
+                          ? "bg-success-light text-success-foreground"
+                          : "bg-black/60 text-foreground",
                       ].join(" ")}
                     >
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setSelectedImage(idea)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            setSelectedImage(idea);
-                          }
-                        }}
-                        className="cursor-pointer outline-none"
-                      >
-                        <img
-                          src={idea.url}
-                          alt={`Concept ${idx + 1}`}
-                          className="block w-[140px] h-[210px] object-cover"
-                        />
-                      </div>
-
-                      {shotMode === "double" && (
-                        <div className="absolute bottom-1 left-1 flex gap-1">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setVeoFirst(idea);
-                            }}
-                            className={[
-                              "px-2 py-0.5 rounded-full border-0 text-[0.7rem]",
-                              isFirst
-                                ? "bg-success-light text-success-foreground"
-                                : "bg-black/60 text-foreground",
-                            ].join(" ")}
-                          >
-                            1st
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setVeoLast(idea);
-                            }}
-                            className={[
-                              "px-2 py-0.5 rounded-full border-0 text-[0.7rem]",
-                              isLast
-                                ? "bg-[#ff7890] text-black"
-                                : "bg-black/60 text-foreground",
-                            ].join(" ")}
-                          >
-                            2nd
-                          </button>
-                        </div>
-                      )}
-
-                      {(isFirst || isLast) && (
-                        <div className="absolute top-1 right-1 px-2 py-0.5 rounded-full text-[0.7rem] bg-black/80 text-foreground">
-                          {isFirst && isLast
-                            ? "1st & 2nd"
-                            : isFirst
-                            ? "1st"
-                            : "2nd"}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Re-run concepts (once) */}
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!recipe || !canRerunConcepts) return;
-                    await generateImageIdeas(recipe, true);
-                  }}
-                  disabled={!canRerunConcepts}
-                  className={[
-                    "inline-flex items-center rounded-md border px-3 py-1 text-xs",
-                    canRerunConcepts
-                      ? "border-border bg-background/40 hover:bg-background/70 cursor-pointer"
-                      : "border-border bg-muted cursor-not-allowed opacity-60",
-                  ].join(" ")}
-                >
-                  {retryCount >= 1
-                    ? "Concepts re-run used"
-                    : "Re-run concepts once"}
-                </button>
-                <span className="text-[0.75rem] text-muted-foreground">
-                  Uses same settings; update color / abstract toggle first if you
-                  like.
-                </span>
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              After analysis, you&apos;ll see three visual concepts here
-              (single-shot) or six (two-shot).
-            </p>
-          )}
-
-          {/* WAN / Veo controls */}
-          {imageIdeas.length > 0 && (
-            <div className="mt-4 flex flex-col gap-3 items-start">
-              <label className="flex flex-col gap-1 text-sm text-muted-foreground">
-                <span>Camera motion (for single-shot WAN)</span>
-                <select
-                  value={cameraMotion}
-                  onChange={(e) =>
-                    setCameraMotion(e.target.value as CameraMotion)
-                  }
-                  className="w-[220px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="zoom-in">Slow zoom in</option>
-                  <option value="zoom-out">Slow zoom out</option>
-                  <option value="circle-pan">Circle pan</option>
-                  <option value="swirl">Subtle swirl</option>
-                  <option value="static">Almost static</option>
-                </select>
-              </label>
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={handleGenerateWanVideo}
-                  disabled={
-                    !selectedImage || !file || wanLoading || shotMode !== "single"
-                  }
-                  className={[
-                    "inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold",
-                    !selectedImage ||
-                    !file ||
-                    wanLoading ||
-                    shotMode !== "single"
-                      ? "bg-muted text-muted-foreground cursor-not-allowed"
-                      : "bg-[#5096ff] text-white hover:opacity-90",
-                  ].join(" ")}
-                >
-                  {wanLoading
-                    ? "Generating 5s WAN loop…"
-                    : "Generate 5s single-shot loop"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleGenerateVeoVideo}
-                  disabled={
-                    imageIdeas.length < 1 || veoLoading || shotMode !== "double"
-                  }
-                  className={[
-                    "inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold",
-                    imageIdeas.length < 1 || veoLoading || shotMode !== "double"
-                      ? "bg-muted text-muted-foreground cursor-not-allowed"
-                      : "bg-[#ff7890] text-white hover:opacity-90",
-                  ].join(" ")}
-                >
-                  {veoLoading
-                    ? "Generating 8s Veo transition…"
-                    : "Generate 8s two-shot loop"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Output videos */}
-          {(wanVideoUrl || veoVideoUrl) && (
-            <div className="mt-4 flex flex-col gap-4 w-full">
-              {wanVideoUrl && (
-                <div className="flex flex-col gap-1 text-xs">
-                  <span>Single-shot 5s loop (WAN):</span>
-                  <video
-                    src={wanVideoUrl}
-                    controls
-                    className="w-full max-h-[260px] rounded-xl border border-border"
-                  />
-                  <a
-                    href={wanVideoUrl}
-                    download="wan-loop.mp4"
-                    className="text-[0.8rem] text-success-light underline underline-offset-4"
-                  >
-                    Download 5s loop (.mp4)
-                  </a>
-                </div>
-              )}
-
-              {veoVideoUrl && (
-                <div className="flex flex-col gap-1 text-xs">
-                  <span>Two-shot ~8s transition (Veo):</span>
-                  <video
-                    src={veoVideoUrl}
-                    controls
-                    className="w-full max-h-[260px] rounded-xl border border-border"
-                  />
-                  <a
-                    href={veoVideoUrl}
-                    download="veo-loop.mp4"
-                    className="text-[0.8rem] text-success-light underline underline-offset-4"
-                  >
-                    Download 8s loop (.mp4)
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT: analysis */}
-        <div className="p-4 rounded-2xl border border-border bg-card/90 overflow-y-auto max-h-[80vh]">
-          <h2 className="text-sm font-medium mb-2">Track analysis</h2>
-          {!recipe && (
-            <p className="text-sm text-muted-foreground">
-              After analysis, you&apos;ll see genre, mood tags and visual notes
-              for the track.
-            </p>
-          )}
-
-          {recipe && (
-            <>
-              <div className="mb-3">
-                <div className="text-xs text-muted-foreground">
-                  Style preset
-                </div>
-                <div className="font-semibold text-sm">
-                  {
-                    VISUAL_STYLES.find((s) => s.id === recipe.chosenStyle)
-                      ?.label
-                  }
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {
-                    VISUAL_STYLES.find((s) => s.id === recipe.chosenStyle)
-                      ?.description
-                  }
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  Mode:{" "}
-                  {recipe.styleMode === "auto"
-                    ? "AI-selected based on track"
-                    : "Manual preset"}
-                </div>
-              </div>
-
-              {recipe.vibeTags && recipe.vibeTags.length > 0 && (
-                <div className="mb-3">
-                  <div className="text-xs text-muted-foreground">
-                    Extra vibe tags
-                  </div>
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    {recipe.vibeTags.map((tag: string) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[0.7rem]"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-3">
-                <div className="text-xs text-muted-foreground">
-                  Genre &amp; energy
-                </div>
-                <div className="text-sm">
-                  <strong>Genre:</strong> {recipe.gemini.genre}
-                </div>
-                <div className="text-sm">
-                  <strong>Energy:</strong> {recipe.gemini.energyLevel}
-                </div>
-              </div>
-
-              <div className="mb-3">
-                <div className="text-xs text-muted-foreground">Mood tags</div>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {recipe.gemini.moodTags.map((tag: string) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[0.7rem]"
+                      1st
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setVeoLast(idea);
+                      }}
+                      className={[
+                        "px-2 py-0.5 rounded-full border-0 text-[0.7rem]",
+                        isLast
+                          ? "bg-[#ff7890] text-black"
+                          : "bg-black/60 text-foreground",
+                      ].join(" ")}
                     >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mb-3">
-                <div className="text-xs text-muted-foreground">Summary</div>
-                <p className="mt-1 text-sm">{recipe.gemini.summary}</p>
-              </div>
-
-              <div className="mb-3">
-                <div className="text-xs text-muted-foreground">
-                  Visual hints
-                </div>
-                <ul className="mt-1 list-disc pl-4 text-sm space-y-1">
-                  {recipe.gemini.visualHints.map(
-                    (hint: string, idx: number) => (
-                      <li key={idx}>{hint}</li>
-                    )
-                  )}
-                </ul>
-              </div>
-
-              {recipe.moodAnswer && (
-                <div className="mt-3">
-                  <div className="text-xs text-muted-foreground">
-                    Artist-provided vibe
+                      2nd
+                    </button>
                   </div>
-                  <p className="mt-1 text-sm">{recipe.moodAnswer}</p>
-                </div>
-              )}
-            </>
-          )}
+                )}
+
+                {(isFirst || isLast) && (
+                  <div className="absolute top-1 right-1 px-2 py-0.5 rounded-full text-[0.7rem] bg-black/80 text-foreground">
+                    {isFirst && isLast
+                      ? "1st & 2nd"
+                      : isFirst
+                      ? "1st"
+                      : "2nd"}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      </section>
-    </main>
-  );
+
+        {/* Re-run concepts (once) */}
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!recipe || !canRerunConcepts) return;
+              await generateImageIdeas(recipe, true);
+            }}
+            disabled={!canRerunConcepts}
+            className={[
+              "inline-flex items-center rounded-md border px-3 py-1 text-xs",
+              canRerunConcepts
+                ? "border-border bg-background/40 hover:bg-background/70 cursor-pointer"
+                : "border-border bg-muted cursor-not-allowed opacity-60",
+            ].join(" ")}
+          >
+            {retryCount >= 1 ? "Concepts re-run used" : "Re-run concepts once"}
+          </button>
+          <span className="text-[0.75rem] text-muted-foreground">
+            Uses same settings; update color / abstract toggle first if you like.
+          </span>
+        </div>
+
+        {/* Step 3 actions */}
+        <div className="flex flex-col items-center gap-3 mt-6">
+          {/* Instruction based on mode */}
+          {shotMode === "double" ? (
+            <p className="text-xs text-muted-foreground">
+              Choose your <strong>1st</strong> and <strong>2nd</strong> frames
+              above to create an 8s transition loop.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Pick one frame to generate a single 5s canvas loop.
+            </p>
+          )}
+
+          {/* Camera motion only for single-shot */}
+          {shotMode !== "double" && (
+            <div className="flex flex-col items-center gap-2">
+              <label className="text-xs text-muted-foreground">
+                Camera motion
+              </label>
+              <select
+                className="bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm"
+                value={cameraMotion}
+                onChange={(e) => setCameraMotion(e.target.value as CameraMotion)}
+              >
+                <option value="zoom-in">Slow zoom in</option>
+                <option value="zoom-out">Slow zoom out</option>
+                <option value="circle-pan">Circle pan</option>
+                <option value="aerial">Drone Shot</option>
+                <option value="static">Static frame</option>
+              </select>
+            </div>
+          )}
+
+          {/* Generate buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 mt-3">
+            {shotMode === "double" ? (
+              <button
+                onClick={handleGenerateVeoVideo}
+                disabled={veoLoading}
+                className="rounded-full bg-pink-600 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition disabled:opacity-60"
+              >
+                {veoLoading
+                  ? "Generating 8s Veo transition…"
+                  : "Generate 8s two-shot loop"}
+              </button>
+            ) : (
+              <button
+                onClick={handleGenerateWanVideo}
+                disabled={wanLoading}
+                className="rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition disabled:opacity-60"
+              >
+                {wanLoading
+                  ? "Generating 5s WAN loop…"
+                  : "Generate 5s single-shot loop"}
+              </button>
+            )}
+          </div>
+        </div>
+      </>
+    ) : (
+      <p className="text-sm text-muted-foreground">
+        After analysis, you&apos;ll see three visual concepts here (single-shot)
+        or six (two-shot).
+      </p>
+    )}
+
+    {/* Output videos */}
+    {(wanVideoUrl || veoVideoUrl) && (
+      <div className="mt-4 flex flex-col gap-4 w-full">
+        {wanVideoUrl && (
+          <div className="flex flex-col gap-1 text-xs">
+            <span>Single-shot 5s loop (WAN):</span>
+            <video
+              src={wanVideoUrl}
+              controls
+              className="w-full max-h-[260px] rounded-xl border border-border"
+            />
+            <a
+              href={wanVideoUrl}
+              download="wan-loop.mp4"
+              className="text-[0.8rem] text-success-light underline underline-offset-4"
+            >
+              Download 5s loop (.mp4)
+            </a>
+          </div>
+        )}
+
+        {veoVideoUrl && (
+          <div className="flex flex-col gap-1 text-xs">
+            <span>Two-shot ~8s transition (Veo):</span>
+            <video
+              src={veoVideoUrl}
+              controls
+              className="w-full max-h-[260px] rounded-xl border border-border"
+            />
+            <a
+              href={veoVideoUrl}
+              download="veo-loop.mp4"
+              className="text-[0.8rem] text-success-light underline underline-offset-4"
+            >
+              Download 8s loop (.mp4)
+            </a>
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+
+  {/* RIGHT: analysis */}
+  <div className="p-4 rounded-2xl border border-border bg-card/90 overflow-y-auto max-h-[80vh]">
+    <h2 className="text-sm font-medium mb-2">Track analysis</h2>
+    {!recipe && (
+      <p className="text-sm text-muted-foreground">
+        After analysis, you&apos;ll see genre, mood tags and visual notes for
+        the track.
+      </p>
+    )}
+
+    {recipe && (
+      <>
+        <div className="mb-3">
+          <div className="text-xs text-muted-foreground">Style preset</div>
+          <div className="font-semibold text-sm">
+            {VISUAL_STYLES.find((s) => s.id === recipe.chosenStyle)?.label}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {VISUAL_STYLES.find((s) => s.id === recipe.chosenStyle)?.description}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            Mode:{" "}
+            {recipe.styleMode === "auto"
+              ? "AI-selected based on track"
+              : "Manual preset"}
+          </div>
+        </div>
+
+        {recipe.vibeTags && recipe.vibeTags.length > 0 && (
+          <div className="mb-3">
+            <div className="text-xs text-muted-foreground">Extra vibe tags</div>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {recipe.vibeTags.map((tag: string) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[0.7rem]"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mb-3">
+          <div className="text-xs text-muted-foreground">Genre &amp; energy</div>
+          <div className="text-sm">
+            <strong>Genre:</strong> {recipe.gemini.genre}
+          </div>
+          <div className="text-sm">
+            <strong>Energy:</strong> {recipe.gemini.energyLevel}
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <div className="text-xs text-muted-foreground">Mood tags</div>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {recipe.gemini.moodTags.map((tag: string) => (
+              <span
+                key={tag}
+                className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[0.7rem]"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <div className="text-xs text-muted-foreground">Summary</div>
+          <p className="mt-1 text-sm">{recipe.gemini.summary}</p>
+        </div>
+
+        <div className="mb-3">
+          <div className="text-xs text-muted-foreground">Visual hints</div>
+          <ul className="mt-1 list-disc pl-4 text-sm space-y-1">
+            {recipe.gemini.visualHints.map((hint: string, idx: number) => (
+              <li key={idx}>{hint}</li>
+            ))}
+          </ul>
+        </div>
+
+        {recipe.moodAnswer && (
+          <div className="mt-3">
+            <div className="text-xs text-muted-foreground">
+              Artist-provided vibe
+            </div>
+            <p className="mt-1 text-sm">{recipe.moodAnswer}</p>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+</section>
+</main>
+);
 }

@@ -46,30 +46,37 @@ function buildBasePrompt(
   const mood = gemini.moodTags?.join(", ");
   const extraVibes = vibeTags?.length ? vibeTags.join(", ") : "";
 
+  // === GENRE STYLES ===
   const genreTone: Record<string, string[]> = {
     techno: [
       "dark geometric minimalism, rhythmic light pulses, kinetic grids, clean symmetry",
-      "metallic reflections, strobing energy, architectural precision",
+      "monochrome palette, metallic reflections, strobing energy, architectural precision",
+      "neon abstract forms, chrome reflections, motion-driven design aesthetic",
     ],
     ambient: [
       "soft floating motion, ethereal mist, cosmic diffusion, watercolor light fields",
       "organic slow motion, meditative depth, flowing gradients, gentle bloom",
+      "dreamlike particles in suspension, calm spectral energy, fluid transitions",
     ],
     pop: [
       "high fashion editorial energy, crystalline gloss, expressive color lighting",
       "surreal beauty shot aesthetic, cinematic glamour, artistic motion freeze",
+      "dynamic stage lighting, confetti textures, fashion-forward poses",
     ],
     hiphop: [
       "urban surrealism, warm low-key lighting, lens flare energy, raw emotion",
       "chrome street visuals, expressive silhouettes, dust and glow, movement energy",
+      "fashion + grit hybrid look, high contrast color blocking",
     ],
     rock: [
       "cinematic grunge realism, stage smoke and flares, dark reds and gold tones",
       "distorted lens energy, noise texture, rebellious surreal composition",
+      "fragmented cinematic flash, dramatic shadows, emotional edge",
     ],
     cinematic: [
       "film still composition, atmospheric realism, golden light, poetic contrast",
       "award-winning visual tone, delicate lens bloom, deep depth of field",
+      "moody film grain, dramatic chiaroscuro, elegant negative space",
     ],
   };
 
@@ -80,19 +87,26 @@ function buildBasePrompt(
       ]
     ) || "";
 
+  // === ENERGY VARIATION ===
   const energyStyle =
     energy === "high"
       ? choice([
           "rapid visual rhythm, high motion blur, dynamic movement",
           "strobing kinetic flow, explosive frame energy",
+          "fast camera transitions, fragmented light motion",
         ])
       : energy === "low"
       ? choice([
-          "slow cinematic pacing, graceful motion, lingering atmosphere",
-          "gentle panning, minimalist movement, soft transitions",
+          "slow cinematic pacing, lingering camera, graceful motion",
+          "gentle panning, meditative atmosphere, minimalist movement",
+          "soft visual rhythm, breathing composition, subtle transition",
         ])
-      : choice(["steady camera motion, elegant pacing, immersive composition"]);
+      : choice([
+          "steady camera motion, elegant pacing, immersive composition",
+          "balanced visual rhythm, smooth cinematic timing",
+        ]);
 
+  // === STYLE PRESETS ===
   const styleRef: Record<string, string[]> = {
     "neon-city": [
       "futuristic neon metropolis, reflections in rain, moody cinematic haze",
@@ -117,19 +131,31 @@ function buildBasePrompt(
       "award-winning surreal art direction, dreamlike cinematic contrast",
     ]);
 
+  // === ABSTRACT / HUMAN / OBJECT LOGIC ===
   const abstractBlock = abstractOnly
     ? choice([
-        "non-human figures, sculptural silhouettes, fragmented reflections",
-        "abstract motion sculpture, no faces, alien crystalline shapes",
+        "non-human figures, sculptural silhouettes, fragmented reflections, refracted geometry",
+        "abstract motion and light sculpture, no faces, alien crystalline shapes",
+        "fluid architecture of color, reflective surfaces, shape-driven narrative",
+        "piano keys melting into light, geometric instruments, surreal motion",
+      ])
+    : Math.random() < 0.4 // 40% chance non-human even without abstractOnly
+    ? choice([
+        "objects in motion: piano, guitar, microphone, geometric sculpture, or city lights personified",
+        "surreal transformation of sound equipment into shapes and color flows",
+        "dreamlike landscape or motion texture instead of human form",
       ])
     : choice([
         "stylized humanoid figure, elegant movement, fashion-forward posture",
         "expressive human-like form, sculpted by light and shadow",
+        "cinematic character presence, mysterious figure in motion",
       ]);
 
+  // === LIGHTING / COLOR / FINISH ===
   const lighting = choice([
     "volumetric lighting, cinematic fog, rim highlights",
     "dramatic side light, ambient bounce, golden reflections",
+    "moody spotlight diffusion, film-style gradient light",
   ]);
 
   const colorText = colorOverride
@@ -137,6 +163,7 @@ function buildBasePrompt(
     : choice([
         "iridescent complementary palette, deep blue with warm highlights",
         "muted analog tones, golden light reflections",
+        "high-contrast palette, pinks and cyans in cinematic bloom",
       ]);
 
   const finish = choice([
@@ -144,6 +171,7 @@ function buildBasePrompt(
     "fine art vertical composition, hyperreal detail, surreal elegance",
   ]);
 
+  // === FINAL PROMPT ===
   return [
     `Concept for a ${gemini.genre} track.`,
     `Mood: ${mood}.`,
@@ -157,10 +185,12 @@ function buildBasePrompt(
     colorText,
     finish,
     "VPM Studio aesthetic — surreal elegance meets audio-driven motion.",
+    "no text, no typography, no words, no logos, no signage, no watermarks, cinematic frame only, vertical 9:16 framing",
   ]
     .filter(Boolean)
     .join(" ");
 }
+
 
 // === IMAGE PROMPT VARIANTS ===
 function buildImagePrompts(
