@@ -318,7 +318,7 @@ export default function HomePage() {
         </p>
 
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">1. Upload track</span>
+          <span className="font-medium">1. Upload .mp3 track (less than 4MB) </span>
           <input
             type="file"
             accept="audio/*"
