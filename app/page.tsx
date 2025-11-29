@@ -13,18 +13,16 @@ export default function LandingPage() {
   const handlePurchase = () => {
     const checkoutUrl =
       "https://vpm.lemonsqueezy.com/buy/5bce3180-ceec-4ff6-9ed3-5f7ebafa1077";
-  
+
     try {
-      // @ts-ignore — injected by lemon.js, not typed in global scope
+      // @ts-ignore — injected by lemon.js
       const lemon = window.LemonSqueezy as {
         Open?: (url: string) => void;
       };
-  
+
       if (lemon && typeof lemon.Open === "function") {
-        // ✅ official LemonSqueezy overlay open
         lemon.Open(checkoutUrl);
       } else {
-        // 🪄 fallback: open checkout in new tab
         window.open(checkoutUrl, "_blank");
       }
     } catch (err) {
@@ -32,8 +30,6 @@ export default function LandingPage() {
       window.open(checkoutUrl, "_blank");
     }
   };
-   
-  
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground px-6 py-12 text-center space-y-8">
@@ -63,7 +59,7 @@ export default function LandingPage() {
           VPM Studio – Canvas Director
         </h1>
         <p className="text-sm md:text-base text-muted-foreground">
-          Upload a track, and we’ll generate dynamic one-of-a-kind vertical
+          Upload a track, and we’ll generate dynamic, one-of-a-kind vertical
           visuals tuned to your song.
         </p>
       </div>
@@ -75,7 +71,8 @@ export default function LandingPage() {
             onClick={handlePurchase}
             className="rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition"
           >
-            Get Access – <span className="line-through text-gray-300">$39.99</span>{" "}
+            Get Access –{" "}
+            <span className="line-through text-gray-300">$39.99</span>{" "}
             <span className="text-yellow-300">$19.99</span>
           </button>
         ) : (
@@ -125,19 +122,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-    {/* ⚖️ Footer / Legal */}
-<footer className="mt-16 text-xs text-muted-foreground space-x-3">
-  <a
-    href="https://docs.google.com/document/d/1-U0Yz3N3FfCmfJH7_iTjsB_qEQbmvxRSxvIqd_kjAKs/edit?tab=t.0"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="hover:underline"
-  >
-    Privacy Policy & GDPR
-  </a>
-  <span>•</span>
-</footer>
-
+      {/* ⚖️ Footer */}
+      <footer className="mt-16 text-xs text-muted-foreground space-x-3">
+        <a
+          href="https://docs.google.com/document/d/1-U0Yz3N3FfCmfJH7_iTjsB_qEQbmvxRSxvIqd_kjAKs/edit?tab=t.0"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline"
+        >
+          Privacy Policy & GDPR
+        </a>
+        <span>•</span>
+        <span>© {new Date().getFullYear()} VPM Studio</span>
+      </footer>
     </main>
   );
 }
