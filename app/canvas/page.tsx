@@ -118,10 +118,7 @@ export default function CanvasLandingPage() {
           Privacy Policy
         </a>
         <span>•</span>
-        <a href="/terms" className="hover:underline">
-          Terms of Service
-        </a>
-        <span>•</span>
+
         <span>© {new Date().getFullYear()} VPM Studio</span>
       </footer>
     </main>

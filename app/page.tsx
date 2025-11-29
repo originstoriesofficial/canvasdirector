@@ -136,14 +136,6 @@ export default function LandingPage() {
     Privacy Policy & GDPR
   </a>
   <span>•</span>
-  <a
-    href="https://vpm.studio/terms"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="hover:underline"
-  >
-    Terms of Service
-  </a>
 </footer>
 
     </main>
