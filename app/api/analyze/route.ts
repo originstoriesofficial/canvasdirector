@@ -1,4 +1,3 @@
-// app/api/analyze/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { analyzeAudioWithGemini } from "@/lib/gemini";
@@ -11,20 +10,21 @@ import type {
 
 export const runtime = "nodejs";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "25mb",
+    },
+  },
+};
+
 function autoPickStyle(g: GeminiAnalysis): VisualStyleId {
   const genre = g.genre.toLowerCase();
   const energy = g.energyLevel;
 
-  if (genre.includes("techno") || genre.includes("minimal")) {
-    return "minimal-techno";
-  }
-  if (genre.includes("indie") || genre.includes("lo-fi") || genre.includes("lofi")) {
-    return "vhs-dream";
-  }
-  if (genre.includes("orchestral") || genre.includes("cinematic")) {
-    return "grainy-film";
-  }
-  // default: neon for pop/edm/etc
+  if (genre.includes("techno") || genre.includes("minimal")) return "minimal-techno";
+  if (genre.includes("indie") || genre.includes("lo-fi") || genre.includes("lofi")) return "vhs-dream";
+  if (genre.includes("orchestral") || genre.includes("cinematic")) return "grainy-film";
   if (energy === "high") return "neon-city";
   return "grainy-film";
 }
@@ -52,17 +52,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing file" }, { status: 400 });
     }
 
+    if (file.size > 8_000_000) {
+      return NextResponse.json({ error: "File too large (max 8MB)" }, { status: 413 });
+    }
+
     const styleMode: StyleMode = styleModeRaw ?? "auto";
-    const canvasDurationSeconds: 3 | 8 =
-      durationRaw === "3" ? 3 : 8; // default 8
+    const canvasDurationSeconds: 3 | 8 = durationRaw === "3" ? 3 : 8;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64Audio = buffer.toString("base64");
     const mimeType = file.type || "audio/mpeg";
 
+    // 🔍 Analyze audio using Gemini (can switch to URL-based if supported)
     const gemini = await analyzeAudioWithGemini(base64Audio, mimeType);
-
     const vibeTags = parseVibeTags(vibeInput);
 
     const chosenStyle: VisualStyleId =
@@ -84,9 +87,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(recipe, { status: 200 });
   } catch (error) {
     console.error("Analyze route error", error);
-    return NextResponse.json(
-      { error: "Failed to analyze audio" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to analyze audio" }, { status: 500 });
   }
 }
