@@ -21,35 +21,23 @@ type RequestBody = {
   colorOverride?: string;
 };
 
-// ✅ Models
+// === MODEL DEFINITIONS ===
 const MODEL_CONFIG = [
-  {
-    id: "flux-2-flex",
-    label: "Flux 2 Flex",
-    model: "fal-ai/flux-2-flex",
-  },
-  {
-    id: "imagen4-preview",
-    label: "Imagen 4 Preview",
-    model: "fal-ai/imagen4/preview",
-  },
-  {
-    id: "nano-banana-pro",
-    label: "Nano Banana Pro",
-    model: "fal-ai/nano-banana-pro",
-  },
+  { id: "flux-2-flex", label: "Flux 2 Flex", model: "fal-ai/flux-2-flex" },
+  { id: "imagen4-preview", label: "Imagen 4 Preview", model: "fal-ai/imagen4/preview" },
+  { id: "nano-banana-pro", label: "Nano Banana Pro", model: "fal-ai/nano-banana-pro" },
 ] as const;
 
-// 🎨 Randomizer helper
+// === RANDOM HELPER ===
 function choice<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// === DYNAMIC PROMPT GENERATOR ===
+// === DYNAMIC PROMPT BUILDER ===
 function buildBasePrompt(
   recipe: TrackRecipe,
-  abstractOnly: boolean | undefined,
-  colorOverride: string | undefined
+  abstractOnly?: boolean,
+  colorOverride?: string
 ): string {
   const { gemini, moodAnswer, vibeTags, chosenStyle } = recipe;
 
@@ -58,37 +46,30 @@ function buildBasePrompt(
   const mood = gemini.moodTags?.join(", ");
   const extraVibes = vibeTags?.length ? vibeTags.join(", ") : "";
 
-  // === GENRE STYLES ===
   const genreTone: Record<string, string[]> = {
     techno: [
       "dark geometric minimalism, rhythmic light pulses, kinetic grids, clean symmetry",
-      "monochrome palette, metallic reflections, strobing energy, architectural precision",
-      "neon abstract forms, chrome reflections, motion-driven design aesthetic",
+      "metallic reflections, strobing energy, architectural precision",
     ],
     ambient: [
       "soft floating motion, ethereal mist, cosmic diffusion, watercolor light fields",
       "organic slow motion, meditative depth, flowing gradients, gentle bloom",
-      "dreamlike particles in suspension, calm spectral energy, fluid transitions",
     ],
     pop: [
       "high fashion editorial energy, crystalline gloss, expressive color lighting",
       "surreal beauty shot aesthetic, cinematic glamour, artistic motion freeze",
-      "dynamic stage lighting, confetti textures, fashion-forward poses",
     ],
     hiphop: [
       "urban surrealism, warm low-key lighting, lens flare energy, raw emotion",
       "chrome street visuals, expressive silhouettes, dust and glow, movement energy",
-      "fashion + grit hybrid look, high contrast color blocking",
     ],
     rock: [
       "cinematic grunge realism, stage smoke and flares, dark reds and gold tones",
       "distorted lens energy, noise texture, rebellious surreal composition",
-      "fragmented cinematic flash, dramatic shadows, emotional edge",
     ],
     cinematic: [
       "film still composition, atmospheric realism, golden light, poetic contrast",
       "award-winning visual tone, delicate lens bloom, deep depth of field",
-      "moody film grain, dramatic chiaroscuro, elegant negative space",
     ],
   };
 
@@ -99,26 +80,19 @@ function buildBasePrompt(
       ]
     ) || "";
 
-  // === ENERGY VARIATION ===
   const energyStyle =
     energy === "high"
       ? choice([
           "rapid visual rhythm, high motion blur, dynamic movement",
           "strobing kinetic flow, explosive frame energy",
-          "fast camera transitions, fragmented light motion",
         ])
       : energy === "low"
       ? choice([
-          "slow cinematic pacing, lingering camera, graceful motion",
-          "gentle panning, meditative atmosphere, minimalist movement",
-          "soft visual rhythm, breathing composition, subtle transition",
+          "slow cinematic pacing, graceful motion, lingering atmosphere",
+          "gentle panning, minimalist movement, soft transitions",
         ])
-      : choice([
-          "steady camera motion, elegant pacing, immersive composition",
-          "balanced visual rhythm, smooth cinematic timing",
-        ]);
+      : choice(["steady camera motion, elegant pacing, immersive composition"]);
 
-  // === STYLE PRESETS ===
   const styleRef: Record<string, string[]> = {
     "neon-city": [
       "futuristic neon metropolis, reflections in rain, moody cinematic haze",
@@ -143,23 +117,19 @@ function buildBasePrompt(
       "award-winning surreal art direction, dreamlike cinematic contrast",
     ]);
 
-  // === ABSTRACT OR HUMAN ===
   const abstractBlock = abstractOnly
     ? choice([
-        "non-human figures, sculptural silhouettes, fragmented reflections, refracted geometry",
-        "abstract motion and light sculpture, no faces, alien crystalline shapes",
-        "fluid architecture of color, reflective surfaces, shape-driven narrative",
+        "non-human figures, sculptural silhouettes, fragmented reflections",
+        "abstract motion sculpture, no faces, alien crystalline shapes",
       ])
     : choice([
         "stylized humanoid figure, elegant movement, fashion-forward posture",
         "expressive human-like form, sculpted by light and shadow",
-        "cinematic character presence, mysterious figure in motion",
       ]);
 
   const lighting = choice([
     "volumetric lighting, cinematic fog, rim highlights",
     "dramatic side light, ambient bounce, golden reflections",
-    "moody spotlight diffusion, film-style gradient light",
   ]);
 
   const colorText = colorOverride
@@ -167,16 +137,13 @@ function buildBasePrompt(
     : choice([
         "iridescent complementary palette, deep blue with warm highlights",
         "muted analog tones, golden light reflections",
-        "high-contrast palette, pinks and cyans in cinematic bloom",
       ]);
 
   const finish = choice([
-    "award-winning composition, cinematic 4K frame, surreal energy, vertical 9:16 format",
-    "fashion editorial lighting, dynamic tone range, no text, no watermark, vertical aspect",
-    "motion-driven fine art still, hyperreal texture, vertical film frame",
+    "award-winning composition, cinematic 4K frame, vertical 9:16 format",
+    "fine art vertical composition, hyperreal detail, surreal elegance",
   ]);
 
-  // === FINAL DYNAMIC PROMPT ===
   return [
     `Concept for a ${gemini.genre} track.`,
     `Mood: ${mood}.`,
@@ -195,7 +162,7 @@ function buildBasePrompt(
     .join(" ");
 }
 
-// === IMAGE PROMPTS ===
+// === IMAGE PROMPT VARIANTS ===
 function buildImagePrompts(
   recipe: TrackRecipe,
   abstractOnly?: boolean,
@@ -204,7 +171,7 @@ function buildImagePrompts(
   const base = buildBasePrompt(recipe, abstractOnly, colorOverride);
   const hints = recipe.gemini.visualHints || [];
 
-  const cinematicShots = [
+  const shots = [
     choice([
       "mid-shot composition, dynamic figure silhouette, floating shards of light",
       "portrait frame, fragmented reflection, ambient fog, surreal atmosphere",
@@ -222,9 +189,9 @@ function buildImagePrompts(
     ]),
   ];
 
-  return cinematicShots.map((shot, i) => {
-    const extra = hints[i] ? `Visual hint: ${hints[i]}.` : "";
-    return `${base} ${shot}. ${extra}`;
+  return shots.map((shot, i) => {
+    const hint = hints[i] ? `Visual hint: ${hints[i]}.` : "";
+    return `${base} ${shot}. ${hint}`;
   });
 }
 
@@ -246,34 +213,36 @@ export async function POST(req: NextRequest) {
     const prompts = buildImagePrompts(recipe, abstractOnly, colorOverride);
     const perModelCount = shotMode === "double" ? 2 : 1;
 
-    const ideas: ImageIdea[] = [];
+    const tasks = MODEL_CONFIG.flatMap((modelCfg) =>
+      Array.from({ length: perModelCount }).map(async (_, i) => {
+        const prompt = prompts[(i + Math.random() * prompts.length) % prompts.length | 0];
 
-    for (const modelCfg of MODEL_CONFIG) {
-      for (let i = 0; i < perModelCount; i++) {
-        const prompt = prompts[(i + ideas.length) % prompts.length];
+        const input =
+          modelCfg.id === "flux-2-flex"
+            ? {
+                prompt,
+                image_size: { width: 1080, height: 1920 }, // 9:16 vertical
+                num_images: 1,
+              }
+            : {
+                prompt,
+                aspect_ratio: "9:16", // 9:16 for Imagen + Nano
+                num_images: 1,
+              };
 
-        const result = await fal.subscribe(modelCfg.model, {
-          input: {
-            prompt,
-            image_size: { width: 1080, height: 1920 },
-            num_images: 1,
-          },
-        });
-
+        const result = await fal.subscribe(modelCfg.model, { input });
         const url =
           (result as any)?.data?.images?.[0]?.url ??
           (result as any)?.data?.image?.url ??
           "";
 
-        if (!url) continue;
+        return url
+          ? { url, prompt, modelId: modelCfg.id }
+          : null;
+      })
+    );
 
-        ideas.push({
-          url,
-          prompt,
-          modelId: modelCfg.id,
-        });
-      }
-    }
+    const ideas = (await Promise.all(tasks)).filter(Boolean) as ImageIdea[];
 
     return NextResponse.json({ ideas }, { status: 200 });
   } catch (err) {
