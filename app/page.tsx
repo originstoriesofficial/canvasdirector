@@ -13,14 +13,27 @@ export default function LandingPage() {
   const handlePurchase = () => {
     const checkoutUrl =
       "https://vpm.lemonsqueezy.com/buy/5bce3180-ceec-4ff6-9ed3-5f7ebafa1077";
-
-    // @ts-ignore — global variable injected by lemon.js
-    if (window.LemonSqueezy) {
-      window.LemonSqueezy.Open(checkoutUrl);
-    } else {
-      window.location.href = checkoutUrl;
+  
+    try {
+      // @ts-ignore — injected by lemon.js, not typed in global scope
+      const lemon = window.LemonSqueezy as {
+        Open?: (url: string) => void;
+      };
+  
+      if (lemon && typeof lemon.Open === "function") {
+        // ✅ official LemonSqueezy overlay open
+        lemon.Open(checkoutUrl);
+      } else {
+        // 🪄 fallback: open checkout in new tab
+        window.open(checkoutUrl, "_blank");
+      }
+    } catch (err) {
+      console.error("LemonSqueezy checkout error:", err);
+      window.open(checkoutUrl, "_blank");
     }
   };
+   
+  
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground px-6 py-12 text-center space-y-8">
@@ -112,18 +125,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ⚖️ Footer / Legal */}
-      <footer className="mt-16 text-xs text-muted-foreground space-x-3">
-        <a href="/privacy" className="hover:underline">
-          Privacy Policy
-        </a>
-        <span>•</span>
-        <a href="/terms" className="hover:underline">
-          Terms of Service
-        </a>
-        <span>•</span>
-        <span>© {new Date().getFullYear()} VPM Studio</span>
-      </footer>
+    {/* ⚖️ Footer / Legal */}
+<footer className="mt-16 text-xs text-muted-foreground space-x-3">
+  <a
+    href="https://docs.google.com/document/d/1-U0Yz3N3FfCmfJH7_iTjsB_qEQbmvxRSxvIqd_kjAKs/edit?tab=t.0"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="hover:underline"
+  >
+    Privacy Policy & GDPR
+  </a>
+  <span>•</span>
+  <a
+    href="https://vpm.studio/terms"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="hover:underline"
+  >
+    Terms of Service
+  </a>
+</footer>
+
     </main>
   );
 }
