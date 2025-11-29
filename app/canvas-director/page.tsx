@@ -422,7 +422,7 @@ export default function HomePage() {
 
         <div>
           <h2 className="text-sm font-medium mb-1">
-            3. (Optional) Describe the vibe
+            2e. (Optional) Describe the vibe
           </h2>
           <textarea
             value={moodAnswer}
@@ -449,7 +449,7 @@ export default function HomePage() {
         {/* MIDDLE: concepts + output video */}
         <div className="flex flex-col gap-4">
           <h2 className="text-sm font-medium">
-            Step 2 — Choose visual &amp; generate
+            Step 3 — Choose visual &amp; generate
           </h2>
 
           {/* Concepts row */}

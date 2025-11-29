@@ -21,7 +21,7 @@ type RequestBody = {
   colorOverride?: string;
 };
 
-// ✅ Three concrete models with matching id/label/model
+// ✅ Models
 const MODEL_CONFIG = [
   {
     id: "flux-2-flex",
@@ -40,6 +40,12 @@ const MODEL_CONFIG = [
   },
 ] as const;
 
+// 🎨 Randomizer helper
+function choice<T>(arr: readonly T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// === DYNAMIC PROMPT GENERATOR ===
 function buildBasePrompt(
   recipe: TrackRecipe,
   abstractOnly: boolean | undefined,
@@ -47,40 +53,149 @@ function buildBasePrompt(
 ): string {
   const { gemini, moodAnswer, vibeTags, chosenStyle } = recipe;
 
-  const styleText =
-    chosenStyle === "neon-city"
-      ? "vibrant neon city lights, futuristic, cinematic, vertical artwork"
-      : chosenStyle === "vhs-dream"
-      ? "soft VHS dream, retro glow, slight blur, film artifacts, vertical artwork"
-      : chosenStyle === "minimal-techno"
-      ? "minimalist techno visual, clean lines, geometric shapes, high contrast, vertical artwork"
-      : "grainy 35mm film, cinematic framing, subtle grain, timeless, vertical artwork";
+  const genre = gemini.genre?.toLowerCase() || "";
+  const energy = gemini.energyLevel?.toLowerCase() || "medium";
+  const mood = gemini.moodTags?.join(", ");
+  const extraVibes = vibeTags?.length ? vibeTags.join(", ") : "";
 
-  const extraVibes = vibeTags && vibeTags.length ? vibeTags.join(", ") : "";
-  const mood = gemini.moodTags.join(", ");
+  // === GENRE STYLES ===
+  const genreTone: Record<string, string[]> = {
+    techno: [
+      "dark geometric minimalism, rhythmic light pulses, kinetic grids, clean symmetry",
+      "monochrome palette, metallic reflections, strobing energy, architectural precision",
+      "neon abstract forms, chrome reflections, motion-driven design aesthetic",
+    ],
+    ambient: [
+      "soft floating motion, ethereal mist, cosmic diffusion, watercolor light fields",
+      "organic slow motion, meditative depth, flowing gradients, gentle bloom",
+      "dreamlike particles in suspension, calm spectral energy, fluid transitions",
+    ],
+    pop: [
+      "high fashion editorial energy, crystalline gloss, expressive color lighting",
+      "surreal beauty shot aesthetic, cinematic glamour, artistic motion freeze",
+      "dynamic stage lighting, confetti textures, fashion-forward poses",
+    ],
+    hiphop: [
+      "urban surrealism, warm low-key lighting, lens flare energy, raw emotion",
+      "chrome street visuals, expressive silhouettes, dust and glow, movement energy",
+      "fashion + grit hybrid look, high contrast color blocking",
+    ],
+    rock: [
+      "cinematic grunge realism, stage smoke and flares, dark reds and gold tones",
+      "distorted lens energy, noise texture, rebellious surreal composition",
+      "fragmented cinematic flash, dramatic shadows, emotional edge",
+    ],
+    cinematic: [
+      "film still composition, atmospheric realism, golden light, poetic contrast",
+      "award-winning visual tone, delicate lens bloom, deep depth of field",
+      "moody film grain, dramatic chiaroscuro, elegant negative space",
+    ],
+  };
 
+  const baseGenreDesc =
+    choice(
+      genreTone[
+        Object.keys(genreTone).find((key) => genre.includes(key)) || "cinematic"
+      ]
+    ) || "";
+
+  // === ENERGY VARIATION ===
+  const energyStyle =
+    energy === "high"
+      ? choice([
+          "rapid visual rhythm, high motion blur, dynamic movement",
+          "strobing kinetic flow, explosive frame energy",
+          "fast camera transitions, fragmented light motion",
+        ])
+      : energy === "low"
+      ? choice([
+          "slow cinematic pacing, lingering camera, graceful motion",
+          "gentle panning, meditative atmosphere, minimalist movement",
+          "soft visual rhythm, breathing composition, subtle transition",
+        ])
+      : choice([
+          "steady camera motion, elegant pacing, immersive composition",
+          "balanced visual rhythm, smooth cinematic timing",
+        ]);
+
+  // === STYLE PRESETS ===
+  const styleRef: Record<string, string[]> = {
+    "neon-city": [
+      "futuristic neon metropolis, reflections in rain, moody cinematic haze",
+      "holographic architecture, glowing wet pavement, cyber fashion energy",
+    ],
+    "vhs-dream": [
+      "analog VHS grain, soft pink haze, nostalgic film lighting",
+      "dreamlike retro aesthetic, gentle diffusion, analog beauty",
+    ],
+    "minimal-techno": [
+      "clean geometric structure, dark ambient light, strobing grid design",
+      "techno minimalism, black and chrome reflections, abstract repetition",
+    ],
+    "grainy-film": [
+      "35mm film still, bokeh texture, analog realism, muted tones",
+      "grain and scratches, poetic lighting, cinematic intimacy",
+    ],
+  };
+
+  const styleDesc =
+    choice(styleRef[chosenStyle] || [
+      "award-winning surreal art direction, dreamlike cinematic contrast",
+    ]);
+
+  // === ABSTRACT OR HUMAN ===
   const abstractBlock = abstractOnly
-    ? "Abstract composition, no humans, no faces, no recognizable people, focus on shapes, light, textures."
-    : "";
+    ? choice([
+        "non-human figures, sculptural silhouettes, fragmented reflections, refracted geometry",
+        "abstract motion and light sculpture, no faces, alien crystalline shapes",
+        "fluid architecture of color, reflective surfaces, shape-driven narrative",
+      ])
+    : choice([
+        "stylized humanoid figure, elegant movement, fashion-forward posture",
+        "expressive human-like form, sculpted by light and shadow",
+        "cinematic character presence, mysterious figure in motion",
+      ]);
 
-  const colorBlock = colorOverride
-    ? `Color palette focus: ${colorOverride}.`
-    : "";
+  const lighting = choice([
+    "volumetric lighting, cinematic fog, rim highlights",
+    "dramatic side light, ambient bounce, golden reflections",
+    "moody spotlight diffusion, film-style gradient light",
+  ]);
 
+  const colorText = colorOverride
+    ? `color palette focus: ${colorOverride}, hue balance, glowing contrasts`
+    : choice([
+        "iridescent complementary palette, deep blue with warm highlights",
+        "muted analog tones, golden light reflections",
+        "high-contrast palette, pinks and cyans in cinematic bloom",
+      ]);
+
+  const finish = choice([
+    "award-winning composition, cinematic 4K frame, surreal energy, vertical 9:16 format",
+    "fashion editorial lighting, dynamic tone range, no text, no watermark, vertical aspect",
+    "motion-driven fine art still, hyperreal texture, vertical film frame",
+  ]);
+
+  // === FINAL DYNAMIC PROMPT ===
   return [
-    gemini.summary,
-    mood && `Mood: ${mood}.`,
-    extraVibes && `Extra vibe: ${extraVibes}.`,
+    `Concept for a ${gemini.genre} track.`,
+    `Mood: ${mood}.`,
+    extraVibes && `Influence tags: ${extraVibes}.`,
     moodAnswer && `Artist direction: ${moodAnswer}.`,
-    styleText,
+    baseGenreDesc,
+    styleDesc,
+    energyStyle,
     abstractBlock,
-    colorBlock,
-    "An award winning visual, cinematic, 4k, ultra detailed, no text, no logos, no watermarks, 9:16 aspect ratio",
+    lighting,
+    colorText,
+    finish,
+    "VPM Studio aesthetic — surreal elegance meets audio-driven motion.",
   ]
     .filter(Boolean)
     .join(" ");
 }
 
+// === IMAGE PROMPTS ===
 function buildImagePrompts(
   recipe: TrackRecipe,
   abstractOnly?: boolean,
@@ -89,17 +204,31 @@ function buildImagePrompts(
   const base = buildBasePrompt(recipe, abstractOnly, colorOverride);
   const hints = recipe.gemini.visualHints || [];
 
-  const h1 = hints.slice(0, 2).join(", ");
-  const h2 = hints.slice(2, 4).join(", ");
-  const h3 = hints.slice(4, 6).join(", ");
+  const cinematicShots = [
+    choice([
+      "mid-shot composition, dynamic figure silhouette, floating shards of light",
+      "portrait frame, fragmented reflection, ambient fog, surreal atmosphere",
+      "side silhouette emerging from light, elegant motion",
+    ]),
+    choice([
+      "wide establishing shot, dreamlike city or organic environment, depth and haze",
+      "aerial top-down composition, flowing geometry, kinetic energy",
+      "wide lens cinematic framing, strong backlight, scale and space",
+    ]),
+    choice([
+      "macro texture close-up, crystal, smoke, fabric, or organic surface",
+      "extreme close-up of light and color distortion",
+      "bokeh transition texture, prismatic refracted details",
+    ]),
+  ];
 
-  const p1 = `${base} Focused composition: ${h1}.`;
-  const p2 = `${base} Wider atmospheric shot: ${h2}.`;
-  const p3 = `${base} Abstract motion and texture: ${h3}.`;
-
-  return [p1, p2, p3];
+  return cinematicShots.map((shot, i) => {
+    const extra = hints[i] ? `Visual hint: ${hints[i]}.` : "";
+    return `${base} ${shot}. ${extra}`;
+  });
 }
 
+// === POST HANDLER ===
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as RequestBody;
@@ -115,8 +244,6 @@ export async function POST(req: NextRequest) {
     }
 
     const prompts = buildImagePrompts(recipe, abstractOnly, colorOverride);
-
-    // single = 1 per model (3 total), double = 2 per model (6 total)
     const perModelCount = shotMode === "double" ? 2 : 1;
 
     const ideas: ImageIdea[] = [];
