@@ -1,4 +1,5 @@
 import "./globals.css";
+import LemonLoader from "../components/LemonLoader";
 
 export const metadata = {
   title: "VPM Studio – Canvas Director",
@@ -11,7 +12,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* ✅ client-side script + listener */}
+        <LemonLoader />
+      </body>
     </html>
   );
 }

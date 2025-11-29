@@ -24,12 +24,17 @@ export type GeminiAnalysis = {
   visualHints: string[];
   sections: Section[];
 };
-
 export type VisualStyleId =
   | "neon-city"
   | "vhs-dream"
   | "minimal-techno"
-  | "grainy-film";
+  | "grainy-film"
+  | "dream-glow"
+  | "glitch-pulse"
+  | "monochrome-motion"
+  | "urban-haze"
+  | "color-burst"
+  | "slow-pan-cinema";
 
 export type StyleMode = "auto" | "manual";
 

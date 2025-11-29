@@ -31,7 +31,37 @@ const VISUAL_STYLES: {
     id: "grainy-film",
     label: "Grainy Film",
     description: "Organic, cinematic, textured",
-  },
+},
+{
+  id: "dream-glow",
+  label: "Dream Glow",
+  description: "Ethereal, pastel gradients, soft camera motion",
+},
+{
+  id: "glitch-pulse",
+  label: "Glitch Pulse",
+  description: "Digital distortion, syncs to beat, high energy",
+},
+{
+  id: "monochrome-motion",
+  label: "Monochrome Motion",
+  description: "Black-and-white, minimal, cinematic lighting",
+},
+{
+  id: "urban-haze",
+  label: "Urban Haze",
+  description: "Hip-hop / R&B vibe, moody lights, grain and contrast",
+},
+{
+  id: "color-burst",
+  label: "Color Burst",
+  description: "Psychedelic animation, flowing color transitions",
+},
+{
+  id: "slow-pan-cinema",
+  label: "Slow Pan Cinema",
+  description: "Cinematic slow-motion pans, muted tones, emotional",
+}
 ];
 
 export default function HomePage() {
