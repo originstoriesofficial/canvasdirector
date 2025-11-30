@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import fs from "fs";
-import path from "path";
+import { redis } from "@/lib/redis";
 
 export const runtime = "nodejs";
-
-const filePath = path.join(process.cwd(), "paid-users.json");
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get("X-Signature") || "";
 
+  // ✅ Verify webhook signature
   const hmac = crypto
     .createHmac("sha256", process.env.LEMON_WEBHOOK_SECRET!)
     .update(rawBody)
@@ -21,22 +19,29 @@ export async function POST(req: NextRequest) {
   }
 
   const event = JSON.parse(rawBody);
-  const email = event?.data?.attributes?.user_email;
+  const email = event?.data?.attributes?.user_email?.toLowerCase();
   if (!email) return NextResponse.json({ ok: true });
 
-  // Read current list
-  let list: string[] = [];
-  try {
-    list = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-  } catch {
-    list = [];
+  // 🧾 Load paid users list
+  const paidUsers = (await redis.get<string[]>("paid-users")) || [];
+  if (!paidUsers.includes(email)) {
+    paidUsers.push(email);
+    await redis.set("paid-users", paidUsers);
   }
 
-  // Add if not already there
-  if (!list.includes(email)) {
-    list.push(email);
-    fs.writeFileSync(filePath, JSON.stringify(list, null, 2));
-  }
+  // 🧮 Manage usage quotas
+  const usage =
+    (await redis.get<Record<string, { loopsUsed: number; quota: number }>>(
+      "usage"
+    )) || {};
+
+  const current = usage[email] || { loopsUsed: 0, quota: 0 };
+  usage[email] = {
+    ...current,
+    quota: current.quota + 2, // each purchase adds 2 loops
+  };
+
+  await redis.set("usage", usage);
 
   return NextResponse.json({ ok: true });
 }
