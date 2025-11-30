@@ -1,6 +1,7 @@
 "use client";
 
-export const dynamic = "force-dynamic"; // ⬅️ Add this line
+export const dynamic = "force-dynamic"; // ✅ stops prerendering for this page
+export const revalidate = 0;             // optional safety for static cache
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,7 +23,9 @@ export default function CheckoutSuccess() {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen">
-      <p className="text-lg text-center">Redirecting you to Canvas Director...</p>
+      <p className="text-lg text-center">
+        Redirecting you to Canvas Director...
+      </p>
     </div>
   );
 }
