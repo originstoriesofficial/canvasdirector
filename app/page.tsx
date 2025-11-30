@@ -39,24 +39,21 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground px-6 py-12 text-center space-y-8">
       {/* 🎥 Three vertical demo videos */}
-      <div className="flex flex-col sm:flex-row justify-center gap-4 mb-6">
-        {[1, 2, 3].map((n) => (
-          <div
-            key={n}
-            className="overflow-hidden rounded-lg shadow-lg bg-black hover:scale-[1.02] transition-transform duration-300"
-          >
-            <video
-              className="h-[400px] w-[225px] object-cover"
-              autoPlay
-              loop
-              muted
-              playsInline
-            >
-              <source src={`/video${n}.mp4`} type="video/mp4" />
-            </video>
-          </div>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  {[1, 2, 3, 4].map((n) => (
+    <div key={n} className="overflow-hidden rounded-lg shadow-lg bg-black">
+      <video
+        className="h-[400px] w-full object-cover"
+        autoPlay
+        loop
+        muted
+        playsInline
+      >
+        <source src={`/video${n}.mp4`} type="video/mp4" />
+      </video>
+    </div>
+  ))}
+</div>
 
       {/* 🧠 Headline + description */}
       <div className="max-w-xl space-y-4">
