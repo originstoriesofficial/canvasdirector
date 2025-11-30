@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { redis } from "@/lib/redis";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
