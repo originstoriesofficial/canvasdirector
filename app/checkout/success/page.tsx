@@ -1,4 +1,7 @@
 "use client";
+
+export const dynamic = "force-dynamic"; // ⬅️ Add this line
+
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
@@ -10,7 +13,6 @@ export default function CheckoutSuccess() {
 
   useEffect(() => {
     if (email) {
-      // ✅ Store user email for access check in middleware
       Cookies.set("vpm_email", email, { expires: 30 });
       router.push("/canvas-director");
     } else {

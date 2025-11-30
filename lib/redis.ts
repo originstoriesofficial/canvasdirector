@@ -1,5 +1,6 @@
 import { Redis } from "@upstash/redis";
 
-// The Upstash → Vercel integration automatically sets the correct env vars,
-// so we can use fromEnv() without manual URL/token handling.
-export const redis = Redis.fromEnv();
+export const redis = new Redis({
+  url: process.env.canvasdirector_REDIS_URL!,
+  token: process.env.canvasdirector_KV_REST_API_TOKEN!,
+});
