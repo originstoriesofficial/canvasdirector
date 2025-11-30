@@ -1,4 +1,3 @@
-// app/checkout/success/page.tsx
 "use client";
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,6 +10,7 @@ export default function CheckoutSuccess() {
 
   useEffect(() => {
     if (email) {
+      // ✅ Store user email for access check in middleware
       Cookies.set("vpm_email", email, { expires: 30 });
       router.push("/canvas-director");
     } else {
@@ -19,8 +19,8 @@ export default function CheckoutSuccess() {
   }, [email, router]);
 
   return (
-    <main className="flex items-center justify-center min-h-screen text-sm">
-      <p>Processing your access… redirecting.</p>
-    </main>
+    <div className="flex flex-col items-center justify-center h-screen">
+      <p className="text-lg text-center">Redirecting you to Canvas Director...</p>
+    </div>
   );
 }

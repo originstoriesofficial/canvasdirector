@@ -1,33 +1,38 @@
+// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { redis } from "@/lib/redis";
+import { redis } from "@/lib/redis"; // ✅ Ensure you have lib/redis.ts configured
 
 export const config = {
   matcher: ["/canvas-director/:path*"],
 };
 
+export const runtime = "experimental-edge";
+
 export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
   const email = req.cookies.get("vpm_email")?.value?.toLowerCase();
 
-  // 🧠 If no email cookie, redirect to checkout
+  // 🚫 If no cookie → redirect to checkout
   if (!email) {
     url.pathname = "/checkout";
     return NextResponse.redirect(url);
   }
 
-  // ✅ Fetch paid user list from Redis
-  const paidUsers = (await redis.get<string[]>("paid-users")) || [];
+  try {
+    // ✅ Check Redis for paid user
+    const isPaid = await redis.sismember("paid-users", email);
 
-  const hasAccess = paidUsers.some(
-    (item) => typeof item === "string" && item.toLowerCase() === email
-  );
+    if (!isPaid) {
+      url.pathname = "/checkout";
+      return NextResponse.redirect(url);
+    }
 
-  if (!hasAccess) {
+    // ✅ User verified → allow access
+    return NextResponse.next();
+  } catch (err) {
+    console.error("Redis middleware error:", err);
     url.pathname = "/checkout";
     return NextResponse.redirect(url);
   }
-
-  // 🚀 Allow access if valid
-  return NextResponse.next();
 }
