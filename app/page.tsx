@@ -11,19 +11,17 @@ export default function LandingPage() {
   }, []);
 
   const handlePurchase = () => {
-    // 👇 Add your redirect URL with the email merge field
+    // ✅ Encode your redirect URL properly
     const redirectUrl = encodeURIComponent(
       "https://canvas.vpm.studio/checkout/success?email={{customer.email}}"
     );
   
-    // 👇 Append redirect to your Lemon checkout link
-    const checkoutUrl = `https://vpm.lemonsqueezy.com/buy/5bce3180-ceec-4ff6-9ed3-5f7ebafa1077?checkout[custom][redirect_url]=${redirectUrl}`;
+    // ✅ Append it to your Lemon checkout link
+    const checkoutUrl = `https://vpm.lemonsqueezy.com/checkout/buy/5bce3180-ceec-4ff6-9ed3-5f7ebafa1077?checkout[custom][redirect_url]=${redirectUrl}`;
   
     try {
       // @ts-ignore — injected by lemon.js
-      const lemon = window.LemonSqueezy as {
-        Open?: (url: string) => void;
-      };
+      const lemon = window.LemonSqueezy as { Open?: (url: string) => void };
   
       if (lemon && typeof lemon.Open === "function") {
         lemon.Open(checkoutUrl);
@@ -35,6 +33,7 @@ export default function LandingPage() {
       window.open(checkoutUrl, "_blank");
     }
   };
+  
   
 
   return (
