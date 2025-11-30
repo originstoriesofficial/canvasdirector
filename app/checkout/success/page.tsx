@@ -1,19 +1,18 @@
 "use client";
 
-export const dynamic = "force-dynamic"; // ✅ prevents prerender crash
-
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
 
-export default function CheckoutSuccess() {
+export const dynamic = "force-dynamic"; // ✅ disables static prerender
+
+function CheckoutSuccessInner() {
   const router = useRouter();
   const params = useSearchParams();
   const email = params.get("email");
 
   useEffect(() => {
     if (email) {
-      // ✅ Store user email for access check
       Cookies.set("vpm_email", email, { expires: 30 });
       router.push("/canvas-director");
     } else {
@@ -27,5 +26,13 @@ export default function CheckoutSuccess() {
         Redirecting you to Canvas Director...
       </p>
     </div>
+  );
+}
+
+export default function CheckoutSuccess() {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <CheckoutSuccessInner />
+    </Suspense>
   );
 }
