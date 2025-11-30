@@ -1,7 +1,6 @@
 "use client";
 
-export const dynamic = "force-dynamic"; // ✅ stops prerendering for this page
-export const revalidate = 0;             // optional safety for static cache
+export const dynamic = "force-dynamic"; // ✅ prevents prerender crash
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,6 +13,7 @@ export default function CheckoutSuccess() {
 
   useEffect(() => {
     if (email) {
+      // ✅ Store user email for access check
       Cookies.set("vpm_email", email, { expires: 30 });
       router.push("/canvas-director");
     } else {
