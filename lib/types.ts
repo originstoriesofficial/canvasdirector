@@ -46,7 +46,7 @@ export type TrackRecipe = {
     styleMode: StyleMode;
     moodAnswer?: string;
     vibeTags?: string[];             // user extra tags (max 3)
-    canvasDurationSeconds?: 3 | 8;   // 3s or 8s
+    canvasDurationSeconds?: 5 | 8;   // 5s or 8s
     selectedImage?: {
       url: string;
       prompt: string;
