@@ -6,9 +6,14 @@ export default function LandingPage() {
   const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
-    const access = document.cookie.includes("canvas_access=true");
-    setHasAccess(access);
+    const cookies = Object.fromEntries(
+      document.cookie.split("; ").map(c => c.split("="))
+    );
+    if (cookies.vpm_email) {
+      setHasAccess(true);
+    }
   }, []);
+  
 
   const handlePurchase = () => {
     // ✅ Encode your redirect URL properly
