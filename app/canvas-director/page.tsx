@@ -136,12 +136,15 @@ export default function HomePage() {
 
     const form = new FormData();
     form.append("file", file);
-    form.append("chosenStyle", chosenStyle);
     form.append("moodAnswer", moodAnswer);
     form.append("styleMode", styleMode);
     form.append("vibeInput", vibeInput);
     form.append("duration", shotMode === "single" ? "5" : "8");
-
+    
+    // ✅ Only include chosenStyle if user manually selected it
+    if (styleMode === "manual") {
+      form.append("chosenStyle", chosenStyle);
+    }
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
@@ -342,7 +345,7 @@ export default function HomePage() {
             onChange={(e) => setStyleMode(e.target.value as StyleMode)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <option value="auto">Let AI choose based on track</option>
+            <option value="auto">Let our system choose based on track</option>
             <option value="manual">Use preset selected below</option>
           </select>
         </div>
