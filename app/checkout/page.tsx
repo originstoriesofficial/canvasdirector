@@ -16,6 +16,7 @@ function SuccessInner() {
       }
 
       try {
+        // ✅ Verify purchase via Lemon API + Redis
         const res = await fetch("/api/verify-lemon", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -25,11 +26,9 @@ function SuccessInner() {
         const data = await res.json();
 
         if (data.ok) {
-          // ✅ Set cookie for entire .vpm.studio domain
-          const cookieValue = `vpm_email=${email.toLowerCase()}; path=/; domain=.vpm.studio; max-age=2592000; secure; samesite=strict`;
-          document.cookie = cookieValue;
-
-          // ✅ Redirect to canvas-director
+          // ✅ Store email cookie (used by middleware)
+          document.cookie = `vpm_email=${email}; path=/; max-age=2592000`; // 30 days
+          // ✅ Redirect to Canvas Director
           router.push("/canvas-director");
         } else {
           console.error("Verification failed:", data);
@@ -55,6 +54,7 @@ function SuccessInner() {
 }
 
 export default function SuccessPage() {
+  // ✅ Wrap useSearchParams() to avoid build-time SSR error
   return (
     <Suspense fallback={<p className="text-center mt-8">Loading...</p>}>
       <SuccessInner />
