@@ -1,18 +1,23 @@
 "use client";
 
 import { Suspense, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 function SuccessInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
     async function verifyAndRedirect() {
       const email = searchParams.get("email");
-      if (!email) return;
+      if (!email) {
+        router.push("/checkout");
+        return;
+      }
 
       try {
-        const res = await fetch("/api/verify-customer", {
+        // ✅ Verify purchase via Lemon API + Redis
+        const res = await fetch("/api/verify-lemon", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
@@ -21,19 +26,22 @@ function SuccessInner() {
         const data = await res.json();
 
         if (data.ok) {
-          // ✅ Set access cookie
-          document.cookie = `vpm_email=${email}; path=/; max-age=2592000`;
-          window.location.href = "/canvas-director";
+          // ✅ Store email cookie (used by middleware)
+          document.cookie = `vpm_email=${email}; path=/; max-age=2592000`; // 30 days
+          // ✅ Redirect to Canvas Director
+          router.push("/canvas-director");
         } else {
           console.error("Verification failed:", data);
+          router.push("/checkout");
         }
       } catch (err) {
         console.error("Verify error:", err);
+        router.push("/checkout");
       }
     }
 
     verifyAndRedirect();
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center text-center space-y-4">
@@ -46,7 +54,7 @@ function SuccessInner() {
 }
 
 export default function SuccessPage() {
-  // ✅ Wrap useSearchParams() in <Suspense> to avoid the Next.js build error
+  // ✅ Wrap useSearchParams() to avoid build-time SSR error
   return (
     <Suspense fallback={<p className="text-center mt-8">Loading...</p>}>
       <SuccessInner />

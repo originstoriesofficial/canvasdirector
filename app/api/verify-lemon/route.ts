@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Redis } from "@upstash/redis";
+
+const redis = new Redis({
+  url: process.env.canvasdirector_KV_REST_API_URL!,
+  token: process.env.canvasdirector_KV_REST_API_TOKEN!,
+});
 
 export const runtime = "nodejs";
-
-interface LemonCustomer {
-  attributes: {
-    email: string;
-  };
-}
 
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
+    if (!email) return NextResponse.json({ ok: false, error: "Missing email" });
 
-    if (!email) {
-      return NextResponse.json({ ok: false, error: "Missing email" });
-    }
-
+    // ✅ Check Lemon API for that customer
     const res = await fetch(
       `https://api.lemonsqueezy.com/v1/customers?filter[email]=${encodeURIComponent(email)}`,
       {
@@ -27,23 +25,16 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Lemon API error:", text);
-      return NextResponse.json({ ok: false, error: "Lemon API request failed" });
+    const data = await res.json();
+    const isPaid = Array.isArray(data.data) && data.data.length > 0;
+
+    if (isPaid) {
+      await redis.sadd("paid-users", email.toLowerCase());
     }
 
-    const data = await res.json();
-
-    const hasCustomer =
-      Array.isArray(data.data) &&
-      (data.data as LemonCustomer[]).some(
-        (c) => c.attributes.email.toLowerCase() === email.toLowerCase()
-      );
-
-    return NextResponse.json({ ok: hasCustomer });
+    return NextResponse.json({ ok: isPaid });
   } catch (err) {
-    console.error("Verify error:", err);
+    console.error("Verify Lemon Error:", err);
     return NextResponse.json({ ok: false, error: "Server error" });
   }
 }
