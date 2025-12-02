@@ -1,21 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Redis } from "@upstash/redis";
-
-const redis = new Redis({
-  url: process.env.canvasdirector_KV_REST_API_URL!,
-  token: process.env.canvasdirector_KV_REST_API_TOKEN!,
-});
+import { redis } from "@/lib/redis";
 
 export const runtime = "nodejs";
+
+interface LemonCustomer {
+  attributes: {
+    email: string;
+  };
+}
 
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
-    if (!email) return NextResponse.json({ ok: false, error: "Missing email" });
 
-    // ✅ Check Lemon API for that customer
+    if (!email) {
+      return NextResponse.json({ ok: false, error: "Missing email" });
+    }
+
+    // 🟢 Check Redis first (faster + immediate after webhook)
+    const isPaid = await redis.sismember("paid-users", email.toLowerCase());
+    if (isPaid) {
+      console.log("✅ Verified via Redis:", email);
+      return NextResponse.json({ ok: true });
+    }
+
+    // 🟡 Fallback to Lemon API (in case Redis doesn’t have it yet)
     const res = await fetch(
-      `https://api.lemonsqueezy.com/v1/customers?filter[email]=${encodeURIComponent(email)}`,
+      `https://api.lemonsqueezy.com/v1/customers?filter[email]=${encodeURIComponent(
+        email
+      )}`,
       {
         headers: {
           Accept: "application/vnd.api+json",
@@ -25,16 +38,26 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    const data = await res.json();
-    const isPaid = Array.isArray(data.data) && data.data.length > 0;
-
-    if (isPaid) {
-      await redis.sadd("paid-users", email.toLowerCase());
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Lemon API error:", text);
+      return NextResponse.json({ ok: false, error: "Lemon API request failed" });
     }
 
-    return NextResponse.json({ ok: isPaid });
+    const data = await res.json();
+
+    // ✅ Add explicit type so TS is happy
+    const hasCustomer =
+      Array.isArray(data.data) &&
+      (data.data as LemonCustomer[]).some(
+        (c) => c.attributes.email.toLowerCase() === email.toLowerCase()
+      );
+
+    console.log("✅ Verified via Lemon API:", { email, hasCustomer });
+
+    return NextResponse.json({ ok: hasCustomer });
   } catch (err) {
-    console.error("Verify Lemon Error:", err);
+    console.error("Verify error:", err);
     return NextResponse.json({ ok: false, error: "Server error" });
   }
 }
