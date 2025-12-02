@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { redis } from "@/lib/redis";
 
 export const runtime = "nodejs";
-
-interface LemonCustomer {
-  attributes: {
-    email: string;
-  };
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,18 +10,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Missing email" });
     }
 
-    // 🟢 Check Redis first (faster + immediate after webhook)
-    const isPaid = await redis.sismember("paid-users", email.toLowerCase());
-    if (isPaid) {
-      console.log("✅ Verified via Redis:", email);
-      return NextResponse.json({ ok: true });
-    }
-
-    // 🟡 Fallback to Lemon API (in case Redis doesn’t have it yet)
+    // 🔍 Check if the customer exists in Lemon Squeezy
     const res = await fetch(
-      `https://api.lemonsqueezy.com/v1/customers?filter[email]=${encodeURIComponent(
-        email
-      )}`,
+      `https://api.lemonsqueezy.com/v1/customers?filter[email]=${encodeURIComponent(email)}`,
       {
         headers: {
           Accept: "application/vnd.api+json",
@@ -46,16 +30,32 @@ export async function POST(req: NextRequest) {
 
     const data = await res.json();
 
-    // ✅ Add explicit type so TS is happy
+    // ✅ Check for a matching email in the Lemon Squeezy response
     const hasCustomer =
       Array.isArray(data.data) &&
-      (data.data as LemonCustomer[]).some(
-        (c) => c.attributes.email.toLowerCase() === email.toLowerCase()
+      data.data.some(
+        (c: any) =>
+          c?.attributes?.email?.toLowerCase() === email.toLowerCase() &&
+          c?.attributes?.status === "subscribed"
       );
 
-    console.log("✅ Verified via Lemon API:", { email, hasCustomer });
+    // ✅ Prepare the response
+    const response = NextResponse.json({ ok: hasCustomer });
 
-    return NextResponse.json({ ok: hasCustomer });
+    if (hasCustomer) {
+      // ✅ Set a secure HttpOnly cookie for 30 days
+      response.cookies.set({
+        name: "vpm_email",
+        value: email.toLowerCase(),
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        sameSite: "lax",
+        secure: true,
+        httpOnly: true,
+      });
+    }
+
+    return response;
   } catch (err) {
     console.error("Verify error:", err);
     return NextResponse.json({ ok: false, error: "Server error" });

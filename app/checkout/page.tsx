@@ -16,7 +16,6 @@ function SuccessInner() {
       }
 
       try {
-        // ✅ Verify purchase via Lemon API + Redis
         const res = await fetch("/api/verify-lemon", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -26,12 +25,8 @@ function SuccessInner() {
         const data = await res.json();
 
         if (data.ok) {
-          // ✅ Store email cookie (used by middleware)
-          document.cookie = `vpm_email=${email}; path=/; max-age=2592000`; // 30 days
-          // ✅ Redirect to Canvas Director
           router.push("/canvas-director");
         } else {
-          console.error("Verification failed:", data);
           router.push("/checkout");
         }
       } catch (err) {
@@ -54,7 +49,6 @@ function SuccessInner() {
 }
 
 export default function SuccessPage() {
-  // ✅ Wrap useSearchParams() to avoid build-time SSR error
   return (
     <Suspense fallback={<p className="text-center mt-8">Loading...</p>}>
       <SuccessInner />
