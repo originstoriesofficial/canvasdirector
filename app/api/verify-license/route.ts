@@ -2,46 +2,95 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+type LemonValidateResponse = {
+  valid: boolean;
+  error: string | null;
+  license_key?: {
+    id: number;
+    status: "inactive" | "active" | "expired" | "disabled";
+    key: string;
+    activation_limit: number;
+    activation_usage: number;
+    created_at: string;
+    expires_at: string | null;
+  };
+  instance?: {
+    id: string;
+    name: string;
+    created_at: string;
+  } | null;
+  meta?: {
+    customer_email?: string;
+    customer_name?: string;
+    product_name?: string;
+    variant_name?: string;
+    [key: string]: unknown;
+  };
+};
+
 export async function POST(req: NextRequest) {
   try {
     const { key } = await req.json();
 
-    if (!key) {
-      return NextResponse.json({ ok: false, error: "Missing key" });
+    if (!key || typeof key !== "string") {
+      return NextResponse.json({ ok: false, error: "Missing license key" }, { status: 400 });
     }
 
-    // 🍋 Validate license with Lemon Squeezy
+    // IMPORTANT: use your License API key here
+    const apiKey = process.env.LEMON_LICENSE_API_KEY || process.env.LEMON_API_KEY;
+    if (!apiKey) {
+      console.error("Missing Lemon Squeezy API key env var");
+      return NextResponse.json(
+        { ok: false, error: "Server misconfigured. Contact support." },
+        { status: 500 }
+      );
+    }
+
+    const body = new URLSearchParams({
+      license_key: key.trim(),
+      // instance_id: "optional-machine-or-installation-id"
+    });
+
     const res = await fetch("https://api.lemonsqueezy.com/v1/licenses/validate", {
       method: "POST",
       headers: {
-        Accept: "application/vnd.api+json",
-        "Content-Type": "application/vnd.api+json",
-        Authorization: `Bearer ${process.env.LEMON_API_KEY}`,
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        data: { type: "licenses", attributes: { key } },
-      }),
+      body,
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as LemonValidateResponse;
 
     if (!res.ok) {
-      console.error("Lemon API error:", data);
-      return NextResponse.json({ ok: false, error: "Lemon API request failed" });
+      console.error("Lemon License API error:", data);
+      return NextResponse.json(
+        {
+          ok: false,
+          error: data.error || "Lemon Squeezy license validation failed",
+        },
+        { status: res.status }
+      );
     }
 
-    const valid = data?.data?.attributes?.valid || false;
+    if (!data.valid) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: data.error || "Invalid or inactive license",
+        },
+        { status: 401 }
+      );
+    }
+
     const email =
-      data?.data?.attributes?.activation?.user_name?.toLowerCase?.() ||
-      data?.data?.attributes?.email?.toLowerCase?.() ||
+      data.meta?.customer_email?.toLowerCase() ??
+      data.meta?.customer_name?.toLowerCase?.() ??
       "license-user";
 
-    if (!valid) {
-      return NextResponse.json({ ok: false, error: "Invalid or inactive license" });
-    }
-
-    // ✅ Set cookie for verified user
     const response = NextResponse.json({ ok: true, email });
+
     response.cookies.set({
       name: "vpm_email",
       value: email,
@@ -56,6 +105,6 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (err) {
     console.error("License verification error:", err);
-    return NextResponse.json({ ok: false, error: "Server error" });
+    return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
   }
 }
