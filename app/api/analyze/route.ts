@@ -21,18 +21,28 @@ export const config = {
 // 🎨 AI-based fallback style selection
 function autoPickStyle(g: GeminiAnalysis): VisualStyleId {
   const genre = g.genre.toLowerCase();
-  const energy = g.energyLevel;
 
   if (genre.includes("techno") || genre.includes("minimal"))
     return "minimal-techno";
+
   if (genre.includes("indie") || genre.includes("lo-fi") || genre.includes("lofi"))
     return "vhs-dream";
+
+  if (
+    genre.includes("edm") ||
+    genre.includes("dance") ||
+    genre.includes("pop") ||
+    genre.includes("club")
+  )
+    return "neon-city";
+
   if (genre.includes("orchestral") || genre.includes("cinematic"))
     return "grainy-film";
-  if (energy === "high") return "neon-city";
 
-  return "grainy-film"; // default fallback
+  // safe, neutral default
+  return "grainy-film";
 }
+
 
 function parseVibeTags(raw: string | null): string[] {
   if (!raw) return [];
