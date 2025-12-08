@@ -22,8 +22,11 @@ export type GeminiAnalysis = {
   energyLevel: "low" | "medium" | "high";
   summary: string;
   visualHints: string[];
-  sections: Section[];
+
+  // 🔥 FIX: Gemini doesn't always return this, so it MUST be optional:
+  sections?: Section[];
 };
+
 export type VisualStyleId =
   | "neon-city"
   | "vhs-dream"
@@ -38,18 +41,17 @@ export type VisualStyleId =
 
 export type StyleMode = "auto" | "manual";
 
-
 export type TrackRecipe = {
-    id: string;
-    gemini: GeminiAnalysis;
-    chosenStyle: VisualStyleId;      // after auto/manual resolution
-    styleMode: StyleMode;
-    moodAnswer?: string;
-    vibeTags?: string[];             // user extra tags (max 3)
-    canvasDurationSeconds?: 5 | 8;   // 5s or 8s
-    selectedImage?: {
-      url: string;
-      prompt: string;
-    };
-    createdAt: string;
+  id: string;
+  gemini: GeminiAnalysis;
+  chosenStyle: VisualStyleId;
+  styleMode: StyleMode;
+  moodAnswer?: string;
+  vibeTags?: string[];
+  canvasDurationSeconds?: 5 | 8;
+  selectedImage?: {
+    url: string;
+    prompt: string;
   };
+  createdAt: string;
+};
