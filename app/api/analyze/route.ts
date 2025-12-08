@@ -10,6 +10,7 @@ import type {
 
 export const runtime = "nodejs";
 
+// Only relevant for old pages/api, but harmless here
 export const config = {
   api: {
     bodyParser: {
@@ -43,7 +44,6 @@ function autoPickStyle(g: GeminiAnalysis): VisualStyleId {
   return "grainy-film";
 }
 
-
 function parseVibeTags(raw: string | null): string[] {
   if (!raw) return [];
   return raw
@@ -51,6 +51,16 @@ function parseVibeTags(raw: string | null): string[] {
     .map((t) => t.trim())
     .filter(Boolean)
     .slice(0, 3);
+}
+
+function isOverloadedError(error: any): boolean {
+  const status =
+    error?.status ??
+    error?.statusCode ??
+    error?.error?.code ??
+    error?.error?.status;
+
+  return status === 503 || status === "UNAVAILABLE";
 }
 
 export async function POST(req: NextRequest) {
@@ -67,6 +77,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing file" }, { status: 400 });
     }
 
+    // 8MB cap for now (safe for Gemini audio)
     if (file.size > 8_000_000) {
       return NextResponse.json(
         { error: "File too large (max 8MB)" },
@@ -77,15 +88,16 @@ export async function POST(req: NextRequest) {
     const styleMode: StyleMode = styleModeRaw ?? "auto";
     const canvasDurationSeconds: 5 | 8 = durationRaw === "5" ? 5 : 8;
 
-    // 🧠 Analyze audio
+    // 🧠 Analyze audio with Gemini (your lib function can have retry logic internally)
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64Audio = buffer.toString("base64");
     const mimeType = file.type || "audio/mpeg";
+
     const gemini = await analyzeAudioWithGemini(base64Audio, mimeType);
     const vibeTags = parseVibeTags(vibeInput);
 
-    // 🎯 Only use chosenStyleRaw if manual mode, otherwise auto-pick
+    // 🎯 Only use chosenStyleRaw if manual mode; otherwise auto-pick from analysis
     const chosenStyle: VisualStyleId =
       styleMode === "manual" && chosenStyleRaw
         ? chosenStyleRaw
@@ -103,10 +115,21 @@ export async function POST(req: NextRequest) {
     };
 
     return NextResponse.json(recipe, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Analyze route error", error);
+
+    if (isOverloadedError(error)) {
+      return NextResponse.json(
+        {
+          error: "AI analyzer is overloaded. Please try again in a moment.",
+          code: "MODEL_OVERLOADED",
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to analyze audio" },
+      { error: "Failed to analyze audio", code: "ANALYZE_FAILED" },
       { status: 500 }
     );
   }

@@ -1,71 +1,79 @@
 // lib/gemini.ts
-import { GoogleGenAI } from "@google/genai";
-import type { GeminiAnalysis } from "./types";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import type { GeminiAnalysis } from "@/lib/types";
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY!,
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const model = genAI.getGenerativeModel({
+  model: "models/gemini-1.5-flash-8b", // or whatever you use
 });
+
+async function callGeminiOnce(
+  base64Audio: string,
+  mimeType: string
+): Promise<GeminiAnalysis> {
+  const result = await model.generateContent({
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            inlineData: {
+              data: base64Audio,
+              mimeType,
+            },
+          },
+          {
+            text:
+              "Analyze this track and return JSON with genre, energyLevel, moodTags, summary, visualHints[]",
+          },
+        ],
+      },
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+    },
+  });
+
+  const text = result.response.text();
+  const parsed = JSON.parse(text);
+
+  // normalize to your GeminiAnalysis shape if needed
+  return parsed as GeminiAnalysis;
+}
 
 export async function analyzeAudioWithGemini(
   base64Audio: string,
   mimeType: string
 ): Promise<GeminiAnalysis> {
-  const contents = [
-    {
-      role: "user" as const,
-      parts: [
-        {
-          text: `You are analyzing a music track for AI-generated Spotify canvas visuals.
+  const maxRetries = 3;
+  let lastError: any;
 
-Return ONLY valid JSON, no markdown, matching this TypeScript type exactly:
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await callGeminiOnce(base64Audio, mimeType);
+    } catch (err: any) {
+      const status =
+        err?.status ??
+        err?.statusCode ??
+        err?.error?.code ??
+        err?.error?.status;
 
-type SectionLabel =
-  | "intro"
-  | "verse"
-  | "pre-chorus"
-  | "chorus"
-  | "drop"
-  | "bridge"
-  | "outro"
-  | "other";
+      const isOverloaded =
+        status === 503 ||
+        status === "UNAVAILABLE" ||
+        err?.error?.status === "UNAVAILABLE";
 
-type Section = {
-  start: number; // seconds from start
-  end: number;
-  label: SectionLabel;
-};
+      // Only retry on overload
+      if (isOverloaded && attempt < maxRetries - 1) {
+        const delayMs = 500 * (attempt + 1); // 0.5s, 1s, 1.5s
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
 
-type GeminiAnalysis = {
-  genre: string;
-  moodTags: string[];          // 3–8 adjectives
-  energyLevel: "low" | "medium" | "high";
-  summary: string;             // 1–3 sentence description of the music
-  visualHints: string[];       // 5–12 short visual concepts for the canvas
-  sections: Section[];
-};
+      lastError = err;
+      break;
+    }
+  }
 
-Infer genre, mood, sections and visual hints from the audio.`,
-        },
-        {
-          inlineData: {
-            mimeType,
-            data: base64Audio,
-          },
-        },
-      ],
-    },
-  ];
-
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents,
-    config: {
-      responseMimeType: "application/json",
-    },
-  });
-  
-
-  const text = response.text ?? "{}";
-  const parsed = JSON.parse(text) as GeminiAnalysis;
-  return parsed;
+  throw lastError ?? new Error("Gemini overloaded");
 }
