@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@fal-ai/client": "^1.7.2",
-    "@google/genai": "^1.30.0",
+    "@google/genai": "^1.31.0",
     "@google/generative-ai": "^0.24.1",
     "@upstash/redis": "^1.35.7",
     "dotenv": "^17.2.3",

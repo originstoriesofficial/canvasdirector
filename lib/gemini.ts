@@ -1,79 +1,73 @@
 // lib/gemini.ts
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { GeminiAnalysis } from "@/lib/types";
+import { GoogleGenAI } from "@google/genai";
+import type { GeminiAnalysis } from "./types";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({
-  model: "models/gemini-1.5-flash-8b", // or whatever you use
-});
+const MODEL_ID = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
-async function callGeminiOnce(
-  base64Audio: string,
-  mimeType: string
-): Promise<GeminiAnalysis> {
-  const result = await model.generateContent({
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            inlineData: {
-              data: base64Audio,
-              mimeType,
-            },
-          },
-          {
-            text:
-              "Analyze this track and return JSON with genre, energyLevel, moodTags, summary, visualHints[]",
-          },
-        ],
-      },
-    ],
-    generationConfig: {
-      responseMimeType: "application/json",
-    },
-  });
-
-  const text = result.response.text();
-  const parsed = JSON.parse(text);
-
-  // normalize to your GeminiAnalysis shape if needed
-  return parsed as GeminiAnalysis;
+if (!process.env.GEMINI_API_KEY) {
+  throw new Error("GEMINI_API_KEY is not set");
 }
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 export async function analyzeAudioWithGemini(
   base64Audio: string,
   mimeType: string
 ): Promise<GeminiAnalysis> {
-  const maxRetries = 3;
-  let lastError: any;
+  const contents = [
+    {
+      text: [
+        "You are a music analysis engine.",
+        "Listen to the audio and return ONLY a JSON object with this exact shape:",
+        "",
+        "{",
+        '  "genre": string,',
+        '  "energyLevel": "low" | "medium" | "high",',
+        '  "moodTags": string[],',
+        '  "visualHints": string[],',
+        '  "summary": string',
+        "}",
+        "",
+        "Constraints:",
+        "- moodTags: 3–6 short lowercase tags.",
+        "- visualHints: 6 short visual scene prompts.",
+        "- summary: 1–2 sentences.",
+        "- Do NOT wrap in markdown or code fences. Output raw JSON only.",
+      ].join("\n"),
+    },
+    {
+      inlineData: {
+        mimeType,
+        data: base64Audio,
+      },
+    },
+  ];
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await callGeminiOnce(base64Audio, mimeType);
-    } catch (err: any) {
-      const status =
-        err?.status ??
-        err?.statusCode ??
-        err?.error?.code ??
-        err?.error?.status;
+  const response = await ai.models.generateContent({
+    model: MODEL_ID,
+    contents,
+  });
 
-      const isOverloaded =
-        status === 503 ||
-        status === "UNAVAILABLE" ||
-        err?.error?.status === "UNAVAILABLE";
+  // NOTE: property, not function
+  const text = response.text ?? "";
 
-      // Only retry on overload
-      if (isOverloaded && attempt < maxRetries - 1) {
-        const delayMs = 500 * (attempt + 1); // 0.5s, 1s, 1.5s
-        await new Promise((r) => setTimeout(r, delayMs));
-        continue;
-      }
-
-      lastError = err;
-      break;
-    }
+  let parsed: any;
+  try {
+    parsed = JSON.parse(text);
+  } catch (err) {
+    console.error("Gemini JSON parse failed. Raw response:", text);
+    throw new Error("Gemini response was not valid JSON");
   }
 
-  throw lastError ?? new Error("Gemini overloaded");
+  const result: GeminiAnalysis = {
+    genre: parsed.genre ?? "unknown",
+    energyLevel: parsed.energyLevel ?? "medium",
+    moodTags: Array.isArray(parsed.moodTags) ? parsed.moodTags : [],
+    visualHints: Array.isArray(parsed.visualHints) ? parsed.visualHints : [],
+    summary: parsed.summary ?? "",
+  };
+
+  return result;
 }
