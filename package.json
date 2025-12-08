@@ -15,7 +15,7 @@
     "@upstash/redis": "^1.35.7",
     "dotenv": "^17.2.3",
     "js-cookie": "^3.0.5",
-    "next": "16.0.4",
+    "next": "^16.0.7",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tailwindcss-animate": "^1.0.7"
