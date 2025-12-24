@@ -63,11 +63,11 @@ export default function LandingPage() {
       {/* 🧠 Headline + description */}
       <div className="max-w-xl space-y-4">
         <h1 className="text-3xl md:text-4xl font-semibold">
-          VPM Studio – Canvas Director
+        Turn your song into scroll-stopping visuals
         </h1>
         <p className="text-sm md:text-base text-muted-foreground">
-          Upload a track, and we’ll generate dynamic, one-of-a-kind vertical
-          visuals tuned to your song.
+        Upload a track, and gert 2 vertical motion loops for Spotify, TikTok & Reels.
+          One-time purchase. Delivered fast. No subscription.
         </p>
       </div>
 
