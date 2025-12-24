@@ -19,30 +19,54 @@ export const config = {
   },
 };
 
-// 🎨 AI-based fallback style selection
+const ALL_STYLES: VisualStyleId[] = [
+  "minimal-techno",
+  "vhs-dream",
+  "neon-city",
+  "grainy-film",
+  "dream-glow",
+  "glitch-pulse",
+  "monochrome-motion",
+  "urban-haze",
+  // add remaining styles here once
+];
+
 function autoPickStyle(g: GeminiAnalysis): VisualStyleId {
   const genre = g.genre.toLowerCase();
 
-  if (genre.includes("techno") || genre.includes("minimal"))
-    return "minimal-techno";
+  const scores: Record<VisualStyleId, number> = Object.fromEntries(
+    ALL_STYLES.map((s) => [s, 0])
+  ) as Record<VisualStyleId, number>;
 
-  if (genre.includes("indie") || genre.includes("lo-fi") || genre.includes("lofi"))
-    return "vhs-dream";
+  // ---------- GENRE ----------
+  if (/\btechno\b|\bminimal\b/.test(genre))
+    scores["minimal-techno"] += 3;
 
-  if (
-    genre.includes("edm") ||
-    genre.includes("dance") ||
-    genre.includes("pop") ||
-    genre.includes("club")
-  )
-    return "neon-city";
+  if (/\blo[- ]?fi\b|\bindie\b/.test(genre))
+    scores["vhs-dream"] += 3;
 
-  if (genre.includes("orchestral") || genre.includes("cinematic"))
-    return "grainy-film";
+  if (/\borchestral\b|\bcinematic\b|\bambient\b/.test(genre))
+    scores["grainy-film"] += 3;
 
-  // safe, neutral default
-  return "grainy-film";
+  if (/\bedm\b|\bclub\b/.test(genre))
+    scores["neon-city"] += 2;
+
+  if (/\bexperimental\b|\bglitch\b/.test(genre))
+    scores["glitch-pulse"] += 3;
+
+  if (/\bhip hop\b|\burban\b/.test(genre))
+    scores["urban-haze"] += 2;
+
+  if (/\belectronic\b/.test(genre)) {
+    scores["minimal-techno"] += 1;
+    scores["dream-glow"] += 1;
+  }
+
+  // ---------- PICK (typed) ----------
+  return (Object.entries(scores) as [VisualStyleId, number][])
+    .sort((a, b) => b[1] - a[1])[0][0];
 }
+
 
 function parseVibeTags(raw: string | null): string[] {
   if (!raw) return [];
